@@ -1,44 +1,58 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Card from "../UI/Card";
 
 import styles from "./AvailableMeals.module.css";
 import MealItem from "./MealItems/MealItem";
 
-const DUMMY_MEALS = [
-  {
-    id: "m1",
-    name: "Biryani",
-    description: "Spicy Chicken Biryani",
-    price: 4.99,
-  },
-  {
-    id: "m2",
-    name: "Beef Pulao",
-    description: "Bano Beef Pulao",
-    price: 9.99,
-  },
-  {
-    id: "m3",
-    name: "Fried Rice",
-    description: "Chinese Special",
-    price: 7.99,
-  },
-  {
-    id: "m4",
-    name: "Zarda",
-    description: "Sweet and Delicious",
-    price: 3.99,
-  },
-];
-
 const AvailableMeals = () => {
-  const mealsList = DUMMY_MEALS.map((meals) => (
+  const [meals, setMeals] = useState([]);
+  const [isLoading, setISLoading] = useState(true);
+  const [httpError, setHttpError] = useState();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setISLoading(true);
+      const response = await fetch(
+        "https://react-http-b804f-default-rtdb.firebaseio.com/Meals.json"
+      );
+      if (!response.ok) {
+        throw new Error("Could not fetch Data");
+      }
+
+      const data = await response.json();
+
+      const loadedMeals = [];
+
+      for (const key in data) {
+        loadedMeals.push({
+          id: key,
+          name: data[key].name,
+          description: data[key].description,
+          price: data[key].price,
+        });
+      }
+      setMeals(loadedMeals);
+      setISLoading(false);
+    };
+    fetchData().catch((error) => {
+      setISLoading(false);
+      setHttpError(error.message);
+    });
+  }, []);
+  if (httpError) {
+    return (
+      <section className={styles.loading}>
+        <p>{httpError}</p>
+      </section>
+    );
+  }
+  const mealsList = meals.map((meal) => (
     <MealItem
-      key={meals.id}
-      id={meals.id}
-      name={meals.name}
-      description={meals.description}
-      price={meals.price}
+      key={meal.id}
+      id={meal.id}
+      name={meal.name}
+      description={meal.description}
+      price={meal.price}
     />
   ));
 
@@ -46,6 +60,7 @@ const AvailableMeals = () => {
     <div className={styles.meals}>
       <Card>
         {" "}
+        {isLoading && <p className={styles.loading}>Fetching the data</p>}
         <ul>{mealsList}</ul>
       </Card>
     </div>
